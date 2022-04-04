@@ -1,6 +1,19 @@
 #include "UDPSocket.h"
 #include <iostream>
 using namespace std;
+//for loop create packet and send
+//Array to keep pointer to all packets
+//while(have_document_left){
+//    for i in window size
+//        send_packets
+//        seq+=window_size
+//    recv_ack
+//    if time_out
+//        resend
+//    else
+//        increment ack
+//
+//}
 int main(){
     UDPSocket sender;
     sender.set_other(8888,"127.0.0.1");

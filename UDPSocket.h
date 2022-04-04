@@ -7,6 +7,7 @@
 #include <netdb.h>
 #include <cstring>
 #include <iostream>
+#include "Packet.h"
 
 class UDPSocket{
     struct sockaddr_in si_other;
@@ -48,6 +49,9 @@ public:
     const char* get_other_addr(){
         return inet_ntoa(si_other.sin_addr);
     }
+    void sendPacket(Packet p);
+    //bool: false if time out
+    bool receivePacket(Packet p);
     ~UDPSocket(){
         close(fd);
     }

@@ -1,5 +1,15 @@
 #include "UDPSocket.h"
 #include <iostream>
+//packet* pks[windowsize]
+//while not end:
+//    recv packet
+//    if is_wanted
+//    update and send ac
+//    if timeout
+//    send acl
+
+//basic part: socket timeout
+//bonus part: std::async?
 
 using namespace std;
 int main(){
