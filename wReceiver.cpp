@@ -15,8 +15,8 @@ int main(){
         char buffer[256]={0};
 
         receiver.receive(buffer,256);
-        cout<<"Data:\n"<<buffer;
-        cout<<"\nSending the data back";
+        cout<<"Data:"<<buffer;
+        cout<<"\nSending the data back\n";
         receiver.send(buffer);
     }
     return 0;

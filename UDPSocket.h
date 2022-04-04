@@ -17,7 +17,7 @@ public:
     UDPSocket(){
         memset(&si_other,0,addrLen);
         memset(&si_me,0,addrLen);
-        len_other=0;
+        len_other=addrLen;
         fd=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     }
     static const socklen_t addrLen=sizeof(sockaddr_in);
@@ -34,12 +34,12 @@ public:
         memcpy(&si_other.sin_addr, sp->h_addr, sp->h_length);
     }
     int send(char* message){
-        std::cout<<"Sending to host: "<<get_other_addr()<<" port: "<<get_other_port();
+        std::cout<<"Sending to host: "<<get_other_addr()<<" port: "<<get_other_port()<<"\n";
         return sendto(fd, message, strlen(message) , 0 , (struct sockaddr *) &si_other, addrLen);
     }
     int receive(char* message,int buff_size){
         int bytes= recvfrom(fd, message, buff_size, 0, (struct sockaddr *) &si_other, &len_other);
-        std::cout<<"Received from host: "<<get_other_addr()<<" port: "<<get_other_port();
+        std::cout<<"Received from host: "<<get_other_addr()<<" port: "<<get_other_port()<<"\n";
         return bytes;
     }
     int get_other_port(){
