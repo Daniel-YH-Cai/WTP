@@ -5,13 +5,23 @@
 using namespace std;
 
 class BatchSender{
+    //TODO: modify waiting_ack in send methods
     UDPSocket* s;
+    //windows base: the first chunk in the windows;
+    //the next packet to be send and to wait for ack
+    int window_base;
+    //the number of packets already sent and are waiting for ack
+    int waiting_ack;
     int length;
     ifstream file;
     ofstream logfile;
+    int window_size;
 public:
     static const int chunk_size=DATA_SIZE;
-    BatchSender(const char* filename,const char* log){
+    BatchSender(const char* filename,const char* log,int ws){
+        waiting_ack=0;
+        window_size=ws;
+        window_base=0;
         s= nullptr;
         logfile=ofstream(log);
         file=ifstream (filename,ios::binary);
@@ -24,7 +34,9 @@ public:
         cout<<"Socket set!\n";
         s=sock;
     }
-    void send_packet(int index,int seqNumber){
+    //send a chunk (1024 bytes) of the file
+    //since data packet initial seq_num is zero, index=seq_num
+    void send_chunk(int index){
         if(chunk_size*index>length){
             cout<<"Invalid index!\n";
         }
@@ -32,14 +44,14 @@ public:
             char buffer[1024]={0};
             file.seekg(index*chunk_size,ios::beg);
             file.read(buffer,chunk_size);
-            Packet p(buffer,seqNumber);
+            Packet p(buffer,index);
             s->sendPacket(p);
             logfile<<p.get_type()<<" "<<p.get_seqNum()
             <<" "<<p.get_length()<<" "<<p.get_checksum()<<"\n";
         }
     }
 
-    //return the new sequence number after sending the packets
+    //return the new sequence number after sending the packets;
     //can send less then window_size packets
     int send_window(int seqNumber, int index,int window_size){
         if(chunk_size*index>length){
@@ -60,7 +72,42 @@ public:
         }
         return seqNumber;
     }
-    bool finished();
+    //Perform one cycle of sending packet and waiting ack;
+    //Take in a bool representing whether ack is received in the previous round;
+    //return whether a proper ack is received
+    bool cycle(bool ack_received){
+        if(ack_received){
+            //send next packet
+            int to_send=window_size-waiting_ack;
+            for(int i=0;i<to_send;i++){
+                send_chunk(window_base+i);
+                waiting_ack++;
+            }
+        }
+        else{//not acked, need to go-back-n
+            send_window(window_base,window_base,window_size);
+        }
+        Packet response;
+        //TODO: reorganize if
+        if(s->receivePacket(&response)){
+            return false;
+        }
+        else{
+            if(response.isValidACK()){
+                //cumulative ack
+                if(response.get_seqNum()<=window_base){
+                    return false;
+                }
+                waiting_ack=waiting_ack-(response.get_seqNum()-window_base);
+                window_base=response.get_seqNum();
+                return true;
+            }
+            return false;
+        }
+    }
+    bool finished(){
+        return window_base==length/chunk_size+1;
+    }
     ~BatchSender(){
         file.close();
     }
@@ -90,12 +137,14 @@ int main(int argc, char* argv[]){
         }
         response.reset();
     }
-    BatchSender bsender(argv[4],argv[5]);
-    int cur_seq=0;
+    BatchSender bsender(argv[4],argv[5],window_size);
     bsender.set_UDPSocket(&udp);
+    bool ack_ed=true;
     while(!bsender.finished()){
-        bsender.send_window(cur_seq,cur_seq,window_size);
-        udp.receivePacket(&response);
+        //firstly send five packets, then wait for one ack
+        //if not acked, then resent five of them
+        //if acked, then send one more packet and move the windows forward
+        ack_ed=bsender.cycle(ack_ed);
     }
     return 0;
 }
