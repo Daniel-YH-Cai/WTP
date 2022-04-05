@@ -1,4 +1,4 @@
-all: wReceiver wSender
+all: wReceiver wSender TimeoutDemo
 
 wReceiver:
 	g++ -g -o wReceiver wReceiver.cpp
@@ -6,6 +6,8 @@ wReceiver:
 wSender:
 	g++ -g -o wSender wSender.cpp
 
+demo:
+	g++ -g -o TimeoutDemo TimeoutDemo.cpp
 
 clean:
-	rm -f utils wReceiver wSender wc wr
+	rm -f  wReceiver wSender TimeoutDemo
