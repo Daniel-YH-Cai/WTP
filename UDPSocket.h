@@ -10,6 +10,7 @@
 #include "Packet.h"
 
 class UDPSocket{
+    int timeout=10;
     struct sockaddr_in si_other;
     struct sockaddr_in si_me;
     socklen_t len_other;
@@ -21,20 +22,27 @@ public:
         len_other=addrLen;
         fd=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     }
+
     static const socklen_t addrLen=sizeof(sockaddr_in);
+    //bind to a port; should only be used in wReceiver
     void bind_me(int port){
         si_me.sin_family = AF_INET;
         si_me.sin_port = htons(port);
         si_me.sin_addr.s_addr = htonl(INADDR_ANY);
         bind(fd , (struct sockaddr*)&si_me, sizeof(si_me) );
     }
+    //set the host to which the packets will be sent to
+    //should only be used in wSender
     void set_other(int port,const char* server){
         si_other.sin_family = AF_INET;
         si_other.sin_port = htons(port);
         struct hostent* sp = gethostbyname(server);
         memcpy(&si_other.sin_addr, sp->h_addr, sp->h_length);
     }
-    int send(char* message){
+    //sent message to host;
+    //after receiving, si_other will automatically be set to the sender
+    //so set_other is not necessary while sending acks in wReceiver
+    int send(const char* message){
         std::cout<<"Sending to host: "<<get_other_addr()<<" port: "<<get_other_port()<<"\n";
         return sendto(fd, message, strlen(message) , 0 , (struct sockaddr *) &si_other, addrLen);
     }
@@ -43,15 +51,48 @@ public:
         std::cout<<"Received from host: "<<get_other_addr()<<" port: "<<get_other_port()<<"\n";
         return bytes;
     }
+
+    //receiving  a maximum of buff_size bytes into message in 500ms
+    //return -1 if do not receive any data in this period
+    //else return the amount of data received
+    int receiveTimeout(char* message,int buff_size){
+        int result=0;
+        bool getSomeData=false;
+        int total_received=0;
+        for(int i=0;i<20;i++){
+            result=recvfrom(fd, message+total_received, buff_size-total_received, MSG_DONTWAIT, (struct sockaddr *) &si_other, &len_other);
+            std::cout<<"Received: "<<result<<"\n";
+            if(result==-1);
+            else{
+                getSomeData=true;
+                total_received=total_received+result;
+                if(total_received=buff_size){
+                    break;
+                }
+            }
+            //unit:milliseconds
+            usleep(25000);
+        }
+        if (!getSomeData){
+            return -1;
+        }
+        std::cout<<"Received: "<<total_received<<"\n";
+        return total_received;
+    }
     int get_other_port(){
         return ntohs(si_other.sin_port);
     }
     const char* get_other_addr(){
         return inet_ntoa(si_other.sin_addr);
     }
-    void sendPacket(Packet p);
-    //bool: false if time out
-    bool receivePacket(Packet p);
+    void sendPacket(Packet p){
+
+    }
+
+    //bool: false if time out;
+    bool receivePacket(Packet* p){
+
+    }
     ~UDPSocket(){
         close(fd);
     }
