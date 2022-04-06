@@ -92,7 +92,7 @@ public:
 
     //bool: false if time out;
     bool receivePacket(Packet* p){
-
+        return false;
     }
     ~UDPSocket(){
         close(fd);

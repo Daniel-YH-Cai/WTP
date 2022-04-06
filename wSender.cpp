@@ -4,8 +4,8 @@
 #define MAX_START_ACK 2048
 using namespace std;
 
+//TODO: avoid hardcoding size
 class BatchSender{
-    //TODO: modify waiting_ack in send methods
     UDPSocket* s;
     //windows base: the first chunk in the windows;
     //the next packet to be send and to wait for ack
@@ -18,9 +18,9 @@ class BatchSender{
     int window_size;
 public:
     static const int chunk_size=DATA_SIZE;
-    BatchSender(const char* filename,const char* log,int ws){
-        waiting_ack=0;
+    BatchSender(const char* filename,const char* log,int ws) {
         window_size=ws;
+        waiting_ack=0;
         window_base=0;
         s= nullptr;
         logfile=ofstream(log);
@@ -34,25 +34,27 @@ public:
         cout<<"Socket set!\n";
         s=sock;
     }
-    //send a chunk (1024 bytes) of the file
+    //send a chunk (1024 bytes) of the file and increase waiting_ack by 1
     //since data packet initial seq_num is zero, index=seq_num
     void send_chunk(int index){
         if(chunk_size*index>length){
             cout<<"Invalid index!\n";
         }
         else{
+            cout<<"Send chunk with index: "<<index<<"\n";
             char buffer[1024]={0};
             file.seekg(index*chunk_size,ios::beg);
             file.read(buffer,chunk_size);
             Packet p(buffer,index);
             s->sendPacket(p);
             logfile<<p.get_type()<<" "<<p.get_seqNum()
-            <<" "<<p.get_length()<<" "<<p.get_checksum()<<"\n";
+                   <<" "<<p.get_length()<<" "<<p.get_checksum()<<"\n";
+            waiting_ack++;
         }
     }
 
     //return the new sequence number after sending the packets;
-    //can send less then window_size packets
+    //can send less then window_size packets (no longer used)
     int send_window(int seqNumber, int index,int window_size){
         if(chunk_size*index>length){
             cout<<"Invalid index!\n";
@@ -75,34 +77,31 @@ public:
     //Perform one cycle of sending packet and waiting ack;
     //Take in a bool representing whether ack is received in the previous round;
     //return whether a proper ack is received
-    bool cycle(bool ack_received){
-        if(ack_received){
-            //send next packet
-            int to_send=window_size-waiting_ack;
-            for(int i=0;i<to_send;i++){
-                send_chunk(window_base+i);
-                waiting_ack++;
-            }
-        }
-        else{//not acked, need to go-back-n
-            send_window(window_base,window_base,window_size);
+    void cycle(){
+        //send next packet
+        int to_send=window_size-waiting_ack;
+        for(int i=0;i<to_send;i++){
+            send_chunk(window_base+i);
         }
         Packet response;
-        //TODO: reorganize if
         if(s->receivePacket(&response)){
-            return false;
-        }
-        else{
-            if(response.isValidACK()){
-                //cumulative ack
-                if(response.get_seqNum()<=window_base){
-                    return false;
-                }
+            logfile<<response.get_type()<<" "<<response.get_seqNum()
+                   <<" "<<response.get_length()<<" "<<response.get_checksum()<<"\n";
+            if(response.isValidACK()&&response.get_seqNum()>window_base){
                 waiting_ack=waiting_ack-(response.get_seqNum()-window_base);
                 window_base=response.get_seqNum();
-                return true;
+                cout<<"Receive ack: "<<response.get_seqNum()<<" New base: "<<window_base<<"\n";
+                cout<<"Now only "<<waiting_ack<<" packets "<<"wait for ack";
             }
-            return false;
+            else{
+                cout<<"Receive low ack: "<<response.get_seqNum()<<" while "<<window_base
+                <<" is expected\n";
+                waiting_ack=0;
+            }
+        }
+        else{
+            cout<<"Waiting for ack of :"<<window_base<<"time out\n";
+            waiting_ack=0;
         }
     }
     bool finished(){
@@ -114,7 +113,7 @@ public:
 
 };
 
-//TODO: finish while loop
+
 int main(int argc, char* argv[]){
     if(argc!=6){
         cout<<"Usage: ./wSender\n";
@@ -139,12 +138,11 @@ int main(int argc, char* argv[]){
     }
     BatchSender bsender(argv[4],argv[5],window_size);
     bsender.set_UDPSocket(&udp);
-    bool ack_ed=true;
     while(!bsender.finished()){
         //firstly send five packets, then wait for one ack
         //if not acked, then resent five of them
         //if acked, then send one more packet and move the windows forward
-        ack_ed=bsender.cycle(ack_ed);
+        bsender.cycle();
     }
     return 0;
 }
