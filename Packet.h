@@ -9,8 +9,6 @@
 #define START 0;
 class Packet
 {
-    // const int for type
-    PacketHeader header;
     int length;
 
 public:
@@ -33,7 +31,7 @@ public:
     // create an ack packet
     Packet(unsigned int seqNum)
     {
-        header = {3, seqNum, 0, 0};
+        header = PacketHeader{3, seqNum, 0, 0};
         // size of payload of data packet
         length = 0;
     }
@@ -52,7 +50,7 @@ public:
         return p;
     }
 
-    void deserializeHeader(Packet *p, char *buffer)
+    static void deserializeHeader(Packet *p, char *buffer)
     {
         char *b = buffer;
         memcpy(&p->header.type, b, 4);
@@ -64,27 +62,27 @@ public:
         memcpy(&p->header.checksum, b, 4);
         p->length = p->header.length;
     }
-    void deserializeBody(Packet *p, char *buffer)
+    static void deserializeBody(Packet *p, char *buffer)
     {
         memcpy(p->data, buffer, p->header.length);
     }
 
     // create a packet from raw bytes received from socket
-    // static void deserialize(Packet *p, char *buffer, unsigned int length)
-    // {
-    //     char *b = buffer;
-    //     memcpy(p->header.type, b, 4);
-    //     b += 4;
-    //     memcpy(p->header.seqNum, b, 4);
-    //     b += 4;
-    //     memcpy(p->header.length, b, 4);
-    //     b += 4;
-    //     memcpy(p->header.checksum, b, 4);
-    //     b += 4;
-    //     memcpy(p->data, b, p->header.length);
-    // }
+     static void deserialize(Packet *p, char *buffer)
+     {
+         char *b = buffer;
+         memcpy(&p->header.type, b, 4);
+         b += 4;
+         memcpy(&p->header.seqNum, b, 4);
+         b += 4;
+         memcpy(&p->header.length, b, 4);
+         b += 4;
+         memcpy(&p->header.checksum, b, 4);
+         b += 4;
+         memcpy(p->data, b, p->header.length);
+     }
     // serialize the packet into bytes and store them in buffer
-    int serialize(Packet *p, char *buffer)
+    static int serialize(Packet *p, char *buffer)
     {
         char *b = buffer;
         memcpy(b, &p->header.type, 4);
@@ -167,4 +165,6 @@ public:
     }
 
     char data[1024] = {0};
+// const int for type
+PacketHeader header;
 };
