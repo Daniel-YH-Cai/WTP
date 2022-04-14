@@ -9,5 +9,11 @@ wSender:
 demo:
 	g++ -g -o TimeoutDemo TimeoutDemo.cpp
 
+give_permission:
+	chmod u+x ./grader/tests
+
+sanity:
+	./grader/tests sanity
+
 clean:
 	rm -f  wReceiver wSender TimeoutDemo
