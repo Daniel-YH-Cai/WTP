@@ -40,7 +40,7 @@ public:
         s = sock;
     }
 
-    void writeFile(ofstream file)
+    void writeFile(ofstream file, BatchReceiver receiver)
     {
         file.write(receiver.window[0].data, receiver.window[0].get_length());
         for (int i = 0; i < receiver.window_size - 1; i++)
@@ -100,7 +100,7 @@ main()
                         receiver.window[0] = &pData;
                         while (receiver.window[0] != NULL)
                         {
-                            receiver.writeFile(file);
+                            receiver.writeFile(file,receiver);
                             num += 1;
                         }
                         Packet newP = new Packet(num);
