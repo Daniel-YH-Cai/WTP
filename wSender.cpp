@@ -53,10 +53,14 @@ public:
             file.seekg(index * chunk_size, ios::beg);
             file.read(buffer, chunk_size);
             Packet p(buffer, index);
+            cout<<"The content before packeting: "<<buffer<<"\n";
             s->sendPacket(p);
             logfile << p.get_type() << " " << p.get_seqNum()
                     << " " << p.get_length() << " " << p.get_checksum() << "\n";
             waiting_ack++;
+            if(index==length/chunk_size){
+                file.clear();
+            }
         }
     }
 

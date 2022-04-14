@@ -1,4 +1,4 @@
-all: wReceiver wSender TimeoutDemo
+all: wReceiver wSender TimeoutDemo seekg
 
 wReceiver:
 	g++ -g -o wReceiver wReceiver.cpp
@@ -21,5 +21,7 @@ give_permission:
 sanity:
 	 ./grader/tests loss
 
+seekg:
+	g++ -g -o seekg seekg.cpp;
 clean:
-	rm -f  wReceiver wSender TimeoutDemo
+	rm -f  wReceiver wSender TimeoutDemo seekg

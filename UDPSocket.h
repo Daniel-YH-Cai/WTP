@@ -113,6 +113,8 @@ public:
         Packet::serialize(&p, buffer);
         this->send(buffer, buffer_size);
         delete[] buffer;
+        std::cout<<"Sending a "<<p.get_type()<<" packet with seqNum "<<p.get_seqNum()<<"\n";
+        std::cout<<p.data<<std::endl;
     }
 
     // bool: false if time out;

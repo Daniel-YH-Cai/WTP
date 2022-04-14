@@ -78,7 +78,7 @@ int main(int argc,char** argv)
         ofstream file = ofstream(receiver.file + "/FILE-" + to_string(receiver.fileCount++) + "out");
         int num = 0;
         int max = 0;
-
+        cout<<"This is new receiver\n";
         while (true)
         {
             Packet pData;
@@ -109,7 +109,11 @@ int main(int argc,char** argv)
                         num += 1;
                     }
                     Packet newP (num);
+                    cout<<"I will send a ack packet with seq "<<newP.get_seqNum()<<"\n";
                     receiver.s->sendPacket(newP);
+                    receiver.logfile<<"ACK Sent\n";
+                    receiver.logfile << newP.get_type() << " " << newP.get_seqNum()
+                                     << " " << newP.get_length() << " " << newP.get_checksum() << "\n";
                 }
                 else
                 {
@@ -118,7 +122,11 @@ int main(int argc,char** argv)
                         receiver.window[pData.get_seqNum() - num] = &pData;
                     }
                     Packet newP (num);
+                    cout<<"I will send a ack packet with seq "<<newP.get_seqNum()<<"\n";
                     receiver.s->sendPacket(newP);
+                    receiver.logfile<<"ACK Send\n";
+                    receiver.logfile << newP.get_type() << " " << newP.get_seqNum()
+                                     << " " << newP.get_length() << " " << newP.get_checksum() << "\n";
                 }
             }
         }
