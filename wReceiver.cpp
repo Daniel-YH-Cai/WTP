@@ -65,7 +65,7 @@ int main(int argc,char** argv)
     cout << "Start receicing\n";
     BatchReceiver receiver(atoi(argv[2]), argv[3], argv[4]);
     receiver.set_UDPSocket(&udp);
-    
+
     Packet p;
     receiver.s->receivePacket(&p);
     receiver.logfile << p.get_type() << " " << p.get_seqNum()
