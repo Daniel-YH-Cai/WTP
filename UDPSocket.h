@@ -47,17 +47,28 @@ public:
     // sent message to host;
     // after receiving, si_other will automatically be set to the sender
     // so set_other is not necessary while sending acks in wReceiver
-    int send(const char *message, int buffer_size)
+    void send(const char *message, int buffer_size)
     {
         std::cout << "Sending to host: " << get_other_addr() << " port: " << get_other_port() << "\n";
         // this use strlen is error ,must use number
-        return sendto(fd, message, buffer_size, 0, (struct sockaddr *)&si_other, addrLen);
+        int n = sendto(fd, message, buffer_size, 0, (struct sockaddr *)&si_other, addrLen);
+        while (n != buffer_size)
+        {
+            message += n;
+            buffer_size -= n;
+            return sendto(fd, message, buffer_size, 0, (struct sockaddr *)&si_other, addrLen);
+        }
     }
-    int receive(char *message, int buff_size)
+    void receive(char *message, int buff_size)
     {
-        int bytes = recvfrom(fd, message, buff_size, 0, (struct sockaddr *)&si_other, &len_other);
         std::cout << "Received from host: " << get_other_addr() << " port: " << get_other_port() << "\n";
-        return bytes;
+        int n = recvfrom(fd, message, buff_size, 0, (struct sockaddr *)&si_other, &len_other);
+        while (n != buff_size)
+        {
+            message += n;
+            buff_size -= n;
+            n = recvfrom(fd, message, buff_size, 0, (struct sockaddr *)&si_other, &len_other);
+        }
     }
 
     // receiving  a maximum of buff_size bytes into message in 500ms
@@ -114,8 +125,10 @@ public:
     bool receivePacket(Packet *p)
     {
         char buffer[1472] = {0};
-        int buffer_size = this->receive(buffer, 1472);
-        Packet::deserialize(p, buffer, buffer_size);
+        this.receive(buffer, 16);
+        Packet::deserializeHeader(p, buffer);
+        this->receive(buffer, p->header.length);
+        Packet::deserializeBody(p, buffer);
         return true;
     }
     ~UDPSocket()

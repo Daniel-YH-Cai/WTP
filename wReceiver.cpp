@@ -77,6 +77,9 @@ main()
                 << " " << p.get_length() << " " << p.get_checksum() << "\n";
         if (p.get_type() == 0)
         {
+            //ack for start
+            Packet newP = new Packet(p.get_seqNum());
+            s->sendPacket(newP);
             ofstream file = ofstream(receiver.file + "/FILE-" + to_string(receiver.fileCount++) + "out");
             int num = 0;
             int max = 0;
@@ -88,6 +91,13 @@ main()
                 logfile << pData.get_type() << " " << pData.get_seqNum()
                         << " " << pData.get_length() << " " << pData.get_checksum() << "\n";
                 // For each packet received
+                if (pData.get_type() == 1 && pData.get_seqNum() == p.get_seqNum())
+                {
+                    //ack for end
+                    Packet newP = new Packet(pData.get_seqNum());
+                    s->sendPacket(newP);
+                    break;
+                }
                 if (pData.checkSum())
                 {
                     if (pData.get_seqNum() == num)
@@ -100,7 +110,7 @@ main()
                         receiver.window[0] = &pData;
                         while (receiver.window[0] != NULL)
                         {
-                            receiver.writeFile(file,receiver);
+                            receiver.writeFile(file, receiver);
                             num += 1;
                         }
                         Packet newP = new Packet(num);
