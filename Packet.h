@@ -54,8 +54,7 @@ public:
         return p;
     }
 
-    // create a packet from raw bytes received from socket
-    static void deserialize(Packet *p, char *buffer, unsigned int length)
+    deserializeHeader(Packet *p, char *buffer)
     {
         char *b = buffer;
         memcpy(p->header.type, b, 4);
@@ -65,10 +64,27 @@ public:
         memcpy(p->header.length, b, 4);
         b += 4;
         memcpy(p->header.checksum, b, 4);
-        b += 4;
-        memcpy(p->data, b, p->header.length);
         p->length = p->header.length;
     }
+    deserializeBody(Packet *p, char *buffer)
+    {
+        memcpy(p->data, buffer, p->header.length);
+    }
+
+    // create a packet from raw bytes received from socket
+    // static void deserialize(Packet *p, char *buffer, unsigned int length)
+    // {
+    //     char *b = buffer;
+    //     memcpy(p->header.type, b, 4);
+    //     b += 4;
+    //     memcpy(p->header.seqNum, b, 4);
+    //     b += 4;
+    //     memcpy(p->header.length, b, 4);
+    //     b += 4;
+    //     memcpy(p->header.checksum, b, 4);
+    //     b += 4;
+    //     memcpy(p->data, b, p->header.length);
+    // }
     // serialize the packet into bytes and store them in buffer
     int serialize(Packet *p, char *buffer)
     {
