@@ -9,10 +9,6 @@
 #define START 0;
 class Packet
 {
-    // const int for type
-    PacketHeader header;
-    const char data[1024] = {0};
-
     int length;
 
 public:
@@ -23,79 +19,80 @@ public:
         length = 0;
     }
     // construct a data packet
-    Packet(const char *data, int seqNum)
+    Packet(const char *data, int seqNum,int size)
     {
-        this->length = 1024;
-        memcpy(this->data, data, length);
+        this->length = size;
+        std::memcpy( this->data, data, this->length);
         this->header.type = 2;
-        this->header.length = length;
+        this->header.length = this->length;
         this->header.seqNum = seqNum;
-        this->header.checksum = crc32(data, length);
+        this->header.checksum = crc32(this->data, this->length);
     }
     // create an ack packet
-    Packet(int seqNum)
+    Packet(unsigned int seqNum)
     {
-        header = {3, seqNum, 0, 0};
+        header = PacketHeader{3, seqNum, 0, 0};
         // size of payload of data packet
         length = 0;
     }
     // create a start packet
-    static Packet StartPacket(int initialSeq)
+    static Packet StartPacket(unsigned int  initialSeq)
     {
-        Packet p = new Packet();
+        Packet p;
         p.header = {0, initialSeq, 0, 0};
         return p;
     }
     // create an end packet
-    static Packet EndPacket(int initialSeq)
+    static Packet EndPacket(unsigned int initialSeq)
     {
-        Packet p = new Packet();
+        Packet p;
         p.header = {1, initialSeq, 0, 0};
         return p;
     }
 
-    deserializeHeader(Packet *p, char *buffer)
+    static void deserializeHeader(Packet *p, char *buffer)
     {
         char *b = buffer;
-        memcpy(p->header.type, b, 4);
+        memcpy(&p->header.type, b, 4);
         b += 4;
-        memcpy(p->header.seqNum, b, 4);
+        memcpy(&p->header.seqNum, b, 4);
         b += 4;
-        memcpy(p->header.length, b, 4);
+        memcpy(&p->header.length, b, 4);
         b += 4;
-        memcpy(p->header.checksum, b, 4);
+        memcpy(&p->header.checksum, b, 4);
         p->length = p->header.length;
     }
-    deserializeBody(Packet *p, char *buffer)
+    static void deserializeBody(Packet *p, char *buffer)
     {
         memcpy(p->data, buffer, p->header.length);
     }
 
     // create a packet from raw bytes received from socket
-    // static void deserialize(Packet *p, char *buffer, unsigned int length)
-    // {
-    //     char *b = buffer;
-    //     memcpy(p->header.type, b, 4);
-    //     b += 4;
-    //     memcpy(p->header.seqNum, b, 4);
-    //     b += 4;
-    //     memcpy(p->header.length, b, 4);
-    //     b += 4;
-    //     memcpy(p->header.checksum, b, 4);
-    //     b += 4;
-    //     memcpy(p->data, b, p->header.length);
-    // }
+     static void deserialize(Packet *p, char *buffer)
+     {
+         char *b = buffer;
+         memcpy(&p->header.type, b, 4);
+         b += 4;
+         memcpy(&p->header.seqNum, b, 4);
+         b += 4;
+         memcpy(&p->header.length, b, 4);
+         b += 4;
+         memcpy(&p->header.checksum, b, 4);
+         b += 4;
+         memcpy(p->data, b, p->header.length);
+         p->length = p->header.length;
+     }
     // serialize the packet into bytes and store them in buffer
-    int serialize(Packet *p, char *buffer)
+    static int serialize(Packet *p, char *buffer)
     {
         char *b = buffer;
-        memcpy(b, p->header.type, 4);
+        memcpy(b, &p->header.type, 4);
         b += 4;
-        memcpy(b, p->header.seqNum, 4);
+        memcpy(b, &p->header.seqNum, 4);
         b += 4;
-        memcpy(b, p->header.length, 4);
+        memcpy(b, &p->header.length, 4);
         b += 4;
-        memcpy(b, p->header.checksum, 4);
+        memcpy(b, &p->header.checksum, 4);
         b += 4;
         memcpy(b, p->data, p->header.length);
         return 16 + p->length;
@@ -104,20 +101,39 @@ public:
     bool checkSum()
     {
         if (this->header.checksum == crc32(this->data, this->length))
-            return 1;
-        return 0;
+            return true;
+        return false;
     }
 
-    void setLength(int length)
+    void setLength(int len)
     {
-        this->header.length = length;
-        this->length = length;
+        this->header.length = len;
+        this->length = len;
     }
 
     // getters
-    unsigned int get_type()
+    // 0: START; 1: END; 2: DATA; 3: ACK
+    std::string get_type()
     {
-        return header.type;
+        std::string ans;
+        switch (header.type) {
+            case 0:
+                ans="START";
+                break;
+            case 1:
+                ans="END";
+                break;
+            case 2:
+                ans="DATA";
+                break;
+            case 3:
+                ans="ACK";
+                break;
+            default:
+                ans="INVALID";
+                std::cout<<"Invalid header!\n";
+        }
+        return ans;
     }
     unsigned int get_seqNum()
     {
@@ -148,4 +164,8 @@ public:
         // size of payload of data packet
         length = 0;
     }
+
+    char data[1024] = {0};
+// const int for type
+PacketHeader header;
 };

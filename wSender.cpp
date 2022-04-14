@@ -52,7 +52,7 @@ public:
             char buffer[1024] = {0};
             file.seekg(index * chunk_size, ios::beg);
             file.read(buffer, chunk_size);
-            Packet p(buffer, index);
+            Packet p(buffer, index,chunk_size);
             s->sendPacket(p);
             logfile << p.get_type() << " " << p.get_seqNum()
                     << " " << p.get_length() << " " << p.get_checksum() << "\n";
@@ -76,7 +76,7 @@ public:
             if ((index + i) * chunk_size <= length)
             {
                 file.read(buffer, chunk_size);
-                Packet p(buffer, seqNumber);
+                Packet p(buffer, seqNumber,chunk_size);
                 s->sendPacket(p);
                 seqNumber++;
                 logfile << p.get_type() << " " << p.get_seqNum()
@@ -97,7 +97,7 @@ public:
             send_chunk(window_base + i);
         }
         Packet response;
-        if (s->receivePacket(&response))
+        if (s->receivePacketTimeout(&response))
         {
             logfile << response.get_type() << " " << response.get_seqNum()
                     << " " << response.get_length() << " " << response.get_checksum() << "\n";
@@ -118,7 +118,7 @@ public:
         }
         else
         {
-            cout << "Waiting for ack of :" << window_base << "time out\n";
+            cout << "Waiting for ack of :" << window_base << " time out\n";
             waiting_ack = 0;
         }
     }
@@ -147,10 +147,11 @@ int main(int argc, char *argv[])
     int initial_seq = random() % MAX_START_ACK;
     Packet start = Packet::StartPacket(initial_seq);
     Packet response;
+    cout<<"Request start\n";
     while (true)
     {
         udp.sendPacket(start);
-        if (udp.receivePacket(&response))
+        if (udp.receivePacketTimeout(&response))
         {
             if (response.isValidACK() && response.get_seqNum() == initial_seq)
             {
@@ -159,6 +160,7 @@ int main(int argc, char *argv[])
         }
         response.reset();
     }
+    cout<<"Start!\n";
     BatchSender bsender(argv[4], argv[5], window_size);
     bsender.set_UDPSocket(&udp);
     while (!bsender.finished())
@@ -168,5 +170,20 @@ int main(int argc, char *argv[])
         // if acked, then send one more packet and move the windows forward
         bsender.cycle();
     }
+    Packet end=Packet::EndPacket(initial_seq);
+    cout<<"Request end!\n";
+    while (true)
+    {
+        udp.sendPacket(end);
+        if (udp.receivePacketTimeout(&response))
+        {
+            if (response.isValidACK() && response.get_seqNum() == initial_seq)
+            {
+                break;
+            }
+        }
+        response.reset();
+    }
+    cout<<"End!\n";
     return 0;
 }
