@@ -77,7 +77,7 @@ int main(int argc,char** argv)
         //ack for start
         Packet startP(p.get_seqNum());
         receiver.s->sendPacket(startP);
-        ofstream file = ofstream(receiver.file + "/FILE-" + to_string(receiver.fileCount++) + "out");
+        ofstream file = ofstream(receiver.file + "/FILE-" + to_string(receiver.fileCount++) + ".out");
         int num = 0;
         int max = 0;
         cout<<"This is new receiver\n";

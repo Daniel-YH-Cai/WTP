@@ -48,21 +48,26 @@ public:
         }
         else
         {
-            cout << "Send chunk with index: " << index << "\n";
             char buffer[1024] = {0};
+            cout << "Send chunk with index: " << index << "\n";
             file.seekg(index * chunk_size, ios::beg);
-            file.read(buffer, chunk_size);
-
-            Packet p(buffer, index,chunk_size);
-
+            int packet_data_size=0;
+            if(index==length/chunk_size){
+                packet_data_size=length%chunk_size;
+                file.read(buffer, packet_data_size);
+                file.clear();
+            }
+            else{
+                packet_data_size=chunk_size;
+                file.read(buffer, packet_data_size);
+            }
+            Packet p(buffer, index,packet_data_size);
             cout<<"The content before packeting: "<<buffer<<"\n";
             s->sendPacket(p);
             logfile << p.get_type() << " " << p.get_seqNum()
                     << " " << p.get_length() << " " << p.get_checksum() << "\n";
             waiting_ack++;
-            if(index==length/chunk_size){
-                file.clear();
-            }
+
         }
     }
 
