@@ -25,7 +25,6 @@ public:
         len_other = addrLen;
         fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     }
-
     static const socklen_t addrLen = sizeof(sockaddr_in);
     // bind to a port; should only be used in wReceiver
     int bind_me(int port)
@@ -55,6 +54,7 @@ public:
     // sent message to host;
     // after receiving, si_other will automatically be set to the sender
     // so set_other is not necessary while sending acks in wReceiver
+
     int send(const char *message, int buffer_size)
     {
         std::cout << "Sending to host: " << get_other_addr() << " port: " << get_other_port() << "\n";
@@ -62,7 +62,7 @@ public:
         return sendto(fd, message, buffer_size, 0, (struct sockaddr *)&si_other, sizeof(si_other));
     }
  
-    }
+
     void receive(char *message, int buff_size)
     {
         std::cout << "Received from host: " << get_other_addr() << " port: " << get_other_port() << "\n";
@@ -134,9 +134,9 @@ public:
     // bool: false if time out;
     bool receivePacket(Packet *p)
     {
-        char buffer[1472] = {0};
+        char buffer[1024+16] = {0};
 
-        this->receive(buffer, 1472);
+        this->receive(buffer, 1024+16);
         Packet::deserialize(p, buffer);
         // this->receive(buffer, p->header.length);
         // Packet::deserializeBody(p, buffer);
