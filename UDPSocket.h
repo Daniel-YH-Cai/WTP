@@ -61,11 +61,12 @@ public:
         // this use strlen is error ,must use number
         return sendto(fd, message, buffer_size, 0, (struct sockaddr *)&si_other, sizeof(si_other));
     }
+ 
+    }
     void receive(char *message, int buff_size)
     {
-        int n = recvfrom(fd, message, buff_size, 0, (struct sockaddr *)&si_other, &len_other);
-        std::cout << "Received from host: " << get_other_addr() << " port: " << get_other_port() <<"byte:"<<n <<"\n";
-
+        std::cout << "Received from host: " << get_other_addr() << " port: " << get_other_port() << "\n";
+        recvfrom(fd, message, buff_size, 0, (struct sockaddr *)&si_other, &len_other);
     }
 
     // receiving  a maximum of buff_size bytes into message in 500ms
@@ -102,9 +103,11 @@ public:
     //        return total_received;
     //    }
 
+
+
     int receiveTimeout(char *message, int buff_size)
     {
-        return recvfrom(fd, message, buff_size, MSG_DONTWAIT, (struct sockaddr *)&si_other, &len_other);
+        return recvfrom(fd, message , buff_size, MSG_DONTWAIT, (struct sockaddr *)&si_other, &len_other);
     }
     int get_other_port()
     {
@@ -119,16 +122,20 @@ public:
     {
 
         int buffer_size = 16 + p.get_length(); // header + data
-        char *buffer = new char[1024 + 16];
+
+        char *buffer = new char[1024+16];
         Packet::serialize(&p, buffer);
         this->send(buffer, buffer_size);
         delete[] buffer;
+        std::cout<<"Sending a "<<p.get_type()<<" packet with seqNum "<<p.get_seqNum()<<"\n";
+        std::cout<<p.data<<std::endl;
     }
 
     // bool: false if time out;
     bool receivePacket(Packet *p)
     {
         char buffer[1472] = {0};
+
         this->receive(buffer, 1472);
         Packet::deserialize(p, buffer);
         // this->receive(buffer, p->header.length);
@@ -136,19 +143,17 @@ public:
         return true;
     }
 
-    bool receivePacketTimeout(Packet *p)
-    {
-        char *buffer = new char[1024 + 16];
-        memset(buffer, 0, 1024 + 16);
-        int received = receiveTimeout(buffer, 1024 + 16);
-        if (received == -1)
-        {
+    bool receivePacketTimeout(Packet *p){
+        char* buffer=new char[1024+16];
+        memset(buffer,0,1024+16);
+        int received=receiveTimeout(buffer,1024+16);
+        if(received==-1){
             delete[] buffer;
             return false;
         }
-        else
-        {
-            Packet::deserialize(p, buffer);
+        else{
+            Packet::deserialize(p,buffer);
+
             delete[] buffer;
             return true;
         }

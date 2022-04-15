@@ -81,6 +81,7 @@ public:
          b += 4;
          memcpy(p->data, b, p->header.length);
          p->length = p->header.length;
+
      }
     // serialize the packet into bytes and store them in buffer
     static int serialize(Packet *p, char *buffer)
