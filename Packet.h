@@ -19,14 +19,14 @@ public:
         length = 0;
     }
     // construct a data packet
-    Packet(const char *data, int seqNum)
+    Packet(const char *data, int seqNum,int size)
     {
-        this->length = 1024;
-        std::memcpy( this->data, data, length);
+        this->length = size;
+        std::memcpy( this->data, data, this->length);
         this->header.type = 2;
-        this->header.length = length;
+        this->header.length = this->length;
         this->header.seqNum = seqNum;
-        this->header.checksum = crc32(data, length);
+        this->header.checksum = crc32(this->data, this->length);
     }
     // create an ack packet
     Packet(unsigned int seqNum)
@@ -80,6 +80,8 @@ public:
          memcpy(&p->header.checksum, b, 4);
          b += 4;
          memcpy(p->data, b, p->header.length);
+         p->length = p->header.length;
+
      }
     // serialize the packet into bytes and store them in buffer
     static int serialize(Packet *p, char *buffer)

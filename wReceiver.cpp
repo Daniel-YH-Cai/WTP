@@ -60,7 +60,9 @@ int main(int argc,char** argv)
     int port = atoi(argv[1]);
     int window_size = atoi(argv[2]);
     UDPSocket udp;
-    udp.bind_me(port);
+    if(!udp.bind_me(port)){
+        return 0;
+    }
     // receiver.bind_me(8888);
     cout << "Start receicing\n";
     BatchReceiver receiver(atoi(argv[2]), argv[3], argv[4]);
@@ -84,7 +86,7 @@ int main(int argc,char** argv)
             Packet pData;
             receiver.s->receivePacket(&pData);
             receiver.logfile << pData.get_type() << " " << pData.get_seqNum()
-                    << " " << pData.get_length() << " " << pData.get_checksum() << "\n";
+                    << " " << pData.get_length() << " " << pData.get_checksum() <<"\n";
             // For each packet received
             if (pData.get_type() == "END" && pData.get_seqNum() == p.get_seqNum())
             {
@@ -95,13 +97,14 @@ int main(int argc,char** argv)
             }
             if (pData.checkSum())
             {
+
+
                 if (pData.get_seqNum() == num)
                 {
                     // if (pData.get_seqNum() > max)
                     // {
                     //     max = pData.get_seqNum();
                     // }
-
                     receiver.window[0] = &pData;
                     while (receiver.window[0] != nullptr)
                     {
